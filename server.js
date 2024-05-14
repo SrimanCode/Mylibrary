@@ -10,6 +10,7 @@ const {
   loginUser,
   getUserData,
   checkUserName,
+  addBooks,
 } = require("./src/database/database.js");
 
 const app = express();
@@ -76,4 +77,14 @@ app.post("/login", async (req, res) => {
 });
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
+});
+
+app.post("/addBooks", async (req, res) => {
+  const { bookname, bookDesc, Available, Author } = req.body;
+  result = await addBooks(bookname, bookDesc, Available, Author);
+  if (result) {
+    res.status(200).send({ success: "Book successful added" });
+  } else {
+    res.status(401).send({ error: "Failed to add books" });
+  }
 });

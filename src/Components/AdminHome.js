@@ -1,4 +1,10 @@
+import UserList from "./Admin/Users";
 function AdminHome() {
-  return <></>;
+  return (
+    <>
+      <UserList />
+    </>
+  );
 }
+
 export default AdminHome;

@@ -51,7 +51,6 @@ const loginUser = async (username, password) => {
     if (rows.length) {
       let loginSuccess = false;
       let UserRole = null;
-      console.log(rows);
       for (let user of rows) {
         const passwordIsValid = bcrypt.compareSync(password, user.password);
         if (passwordIsValid) {
@@ -71,4 +70,27 @@ const loginUser = async (username, password) => {
   }
 };
 
-module.exports = { registerUser, loginUser, getUserData, checkUserName };
+const addBooks = async (bookname, bookDesc, Available, Author) => {
+  try {
+    const sql =
+      "INSERT INTO Books(BookName, BookDescription, Available, Author) VALUES(?, ?, ?, ?)";
+    const [result] = await pool.query(sql, [
+      bookname,
+      bookDesc,
+      Available,
+      Author,
+    ]);
+    return true;
+  } catch (err) {
+    console.error("Database error:", err.message);
+    return false;
+  }
+};
+
+module.exports = {
+  registerUser,
+  loginUser,
+  getUserData,
+  checkUserName,
+  addBooks,
+};
