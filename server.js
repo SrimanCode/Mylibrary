@@ -19,7 +19,6 @@ app.use(cors());
 app.use(express.json()); // Middleware to parse JSON bodies
 
 app.get("/user", async (req, res) => {
-  console.log("Userinfo endpoint hit");
   res.status(200).send({ success: "data point sucessfully hit!!" });
 });
 
@@ -69,8 +68,8 @@ app.post("/login", async (req, res) => {
     return res.status(400).send("All input is required");
   }
   result = await loginUser(username, password);
-  if (result) {
-    res.status(200).send({ success: "Login successful" });
+  if (result.success) {
+    res.status(200).send({ success: "Login successful", role: result.role });
   } else {
     res.status(401).send({ error: "Login Failed" });
   }
