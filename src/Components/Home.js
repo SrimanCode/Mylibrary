@@ -7,25 +7,36 @@ function Home() {
   const navigate = useNavigate();
 
   const [bookList, setBookList] = useState([]);
+  const [loanedBooks, setLoanedBooks] = useState([]);
   const [error, setError] = useState("");
-
+  const user = sessionStorage.getItem("user");
+  const userObj = JSON.parse(user);
   useEffect(() => {
-    const user = sessionStorage.getItem("user");
     if (!user) {
       navigate("/login");
     }
     fetch("http://localhost:5000/Bookinfo")
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error("Network response was not ok.");
-        }
-        return response.json();
-      })
+      .then((response) =>
+        response.ok ? response.json() : Promise.reject("Failed to load books")
+      )
       .then((data) => setBookList(data))
-      .catch((error) => {
-        setError("Failed to fetch data: " + error.message);
-      });
-  }, [navigate]);
+      .catch((error) => setError("Failed to fetch books: " + error));
+
+    fetch("http://localhost:5000/loanedBook", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ userid: userObj.id }),
+    })
+      .then((response) =>
+        response.ok
+          ? response.json()
+          : Promise.reject("Failed to load loaned books")
+      )
+      .then((data) => setLoanedBooks(data.success.map((item) => item.book_id)))
+      .catch((error) => setError("Failed to fetch loaned books: " + error));
+  }, [navigate, user.id]);
 
   function handleLogout() {
     auth.logout();
@@ -50,11 +61,17 @@ function Home() {
       })
       .then((data) => {
         alert("Book borrowed successfully");
-        // Optionally, trigger a refresh or state update
+        setBookList((previousBooks) =>
+          previousBooks.filter((book) => book.Bookid !== bookId)
+        );
       })
       .catch((error) => {
-        setError(`Failed to borrow book: ${error.message}`);
+        alert("Failed to borrow book");
       });
+  }
+
+  function isLoaned(bookId) {
+    return loanedBooks.includes(bookId);
   }
 
   return (
@@ -67,7 +84,7 @@ function Home() {
       </button>
       {error && (
         <div
-          className="relative px-4 py-3 text-red-700 bg-red-100 border border-red-400 rounded"
+          className="px-4 py-3 text-red-700 bg-red-100 border border-red-400 rounded"
           role="alert"
         >
           {error}
@@ -104,9 +121,14 @@ function Home() {
               </div>
               <button
                 onClick={() => handleRentBook(book.Bookid)}
-                className="px-4 py-2 mt-4 text-white bg-blue-500 rounded hover:bg-blue-700 focus:outline-none focus:shadow-outline"
+                disabled={isLoaned(book.Bookid)}
+                className={`px-4 py-2 mt-4 text-white rounded focus:outline-none focus:shadow-outline ${
+                  isLoaned(book.Bookid)
+                    ? "bg-gray-400 cursor-not-allowed"
+                    : "bg-blue-500 hover:bg-blue-700"
+                }`}
               >
-                Rent Book
+                {isLoaned(book.Bookid) ? "Already Loaned" : "Rent Book"}
               </button>
             </div>
           </div>

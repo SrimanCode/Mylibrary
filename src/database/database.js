@@ -208,6 +208,20 @@ const ReturnBook = async (userid, bookid) => {
   }
 };
 
+const loanedBook = async (userid) => {
+  try {
+    // Check if user exists
+    if (!(await checkUser(userid))) {
+      return { error: "User does not exist" };
+    }
+    const sql = "SELECT book_id FROM loans WHERE user_id = ?";
+    const [result] = await pool.query(sql, [userid]);
+    return { result: result };
+  } catch (error) {
+    return { error: "Unable to fetch data: " + error.message };
+  }
+};
+
 module.exports = {
   registerUser,
   loginUser,
@@ -218,4 +232,5 @@ module.exports = {
   checkBook,
   BorrowBook,
   ReturnBook,
+  loanedBook,
 };
