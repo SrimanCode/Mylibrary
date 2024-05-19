@@ -1,9 +1,13 @@
 import React, { useState } from "react";
 import axios from "axios";
 import { Outlet, Link, useNavigate } from "react-router-dom";
-import Register from "./Register";
 import { useAuth } from "./Auth";
 import bookImg from "../Images/books.avif";
+
+function setToken(userToken) {
+  sessionStorage.setItem("token", JSON.stringify(userToken));
+}
+
 function Login() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -18,7 +22,8 @@ function Login() {
         password,
       });
 
-      auth.login(response.data);
+      setToken(response.data.token); // Store the token in session storage
+      auth.login(response.data); // Update auth context or state
       if (response.data.role === "user") {
         navigate("/home", { replace: true });
       } else {
