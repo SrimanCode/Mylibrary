@@ -1,4 +1,4 @@
-import UserList from "./Admin/Users";
+import UserList from "./Users";
 function AdminHome() {
   return (
     <>

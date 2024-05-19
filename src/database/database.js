@@ -51,15 +51,17 @@ const loginUser = async (username, password) => {
     if (rows.length) {
       let loginSuccess = false;
       let UserRole = null;
+      let userid = null;
       for (let user of rows) {
         const passwordIsValid = bcrypt.compareSync(password, user.password);
         if (passwordIsValid) {
           loginSuccess = true;
           UserRole = user.role;
+          userid = user.id;
           break;
         }
       }
-      return { success: loginSuccess, role: UserRole };
+      return { success: loginSuccess, role: UserRole, id: userid };
     } else {
       console.log("No user found with that username");
       return false;

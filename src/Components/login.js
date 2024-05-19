@@ -21,9 +21,8 @@ function Login() {
         username,
         password,
       });
-
-      setToken(response.data.token); // Store the token in session storage
       auth.login(response.data); // Update auth context or state
+      sessionStorage.setItem("user", JSON.stringify(response.data));
       if (response.data.role === "user") {
         navigate("/home", { replace: true });
       } else {

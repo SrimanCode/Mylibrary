@@ -68,13 +68,12 @@ app.post("/register", async (req, res) => {
 // user login
 app.post("/login", async (req, res) => {
   const { username, password } = req.body;
-
   if (!(username && password)) {
     return res.status(400).send("All input is required");
   }
   result = await loginUser(username, password);
   if (result.success) {
-    res.status(200).send({ success: "Login successful", role: result.role });
+    res.status(200).send(result);
   } else {
     res.status(401).send({ error: "Login Failed" });
   }
