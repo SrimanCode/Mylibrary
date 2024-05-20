@@ -93,7 +93,7 @@ app.post("/resetPassword", async (req, res) => {
 
 // adding new books to the database
 app.post("/addBooks", async (req, res) => {
-  const { bookname, bookDesc, Available, Author, BookNumber, ISBN } = req.body;
+  const { bookname, bookDesc, Author, BookNumber, ISBN } = req.body;
   try {
     const bookExists = await checkBook(ISBN);
     if (bookExists) {
@@ -104,14 +104,7 @@ app.post("/addBooks", async (req, res) => {
     }
 
     // Proceed to add the book since it does not exist.
-    const result = await addBooks(
-      bookname,
-      bookDesc,
-      Available,
-      Author,
-      BookNumber,
-      ISBN
-    );
+    const result = await addBooks(bookname, bookDesc, Author, BookNumber, ISBN);
 
     if (result) {
       // If adding the book was successful, sending a 201 Created status.

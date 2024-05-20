@@ -60,10 +60,9 @@ function Home() {
         throw new Error("Failed to borrow book");
       })
       .then((data) => {
-        alert("Book borrowed successfully");
-        setBookList((previousBooks) =>
-          previousBooks.filter((book) => book.Bookid !== bookId)
-        );
+        if (data.success) {
+          setLoanedBooks((prevLoanedBooks) => [...prevLoanedBooks, bookId]);
+        }
       })
       .catch((error) => {
         alert("Failed to borrow book");

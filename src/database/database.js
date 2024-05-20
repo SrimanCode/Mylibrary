@@ -101,21 +101,13 @@ const BooksInfo = async () => {
 };
 
 // adding books to the database
-const addBooks = async (
-  bookname,
-  bookDesc,
-  Available,
-  Author,
-  BookNumber,
-  ISBN
-) => {
+const addBooks = async (bookname, bookDesc, Author, BookNumber, ISBN) => {
   try {
     const sql =
-      "INSERT INTO Books(BookName, BookDescription, Available, Author, BookNumber, ISBN) VALUES(?, ?, ?, ?, ?, ?)";
+      "INSERT INTO Books(BookName, BookDescription, Author, BookNumber, ISBN) VALUES(?, ?, ?, ?, ?)";
     const [result] = await pool.query(sql, [
       bookname,
       bookDesc,
-      Available,
       Author,
       BookNumber,
       ISBN,
