@@ -112,7 +112,18 @@ const addBooks = async (bookname, bookDesc, Author, BookNumber, ISBN) => {
       BookNumber,
       ISBN,
     ]);
-    return true;
+    console.log(result);
+    return {
+      success: true,
+      result: {
+        Bookid: result.insertId,
+        BookName: bookname,
+        BookDescription: bookDesc,
+        Author: Author,
+        BookNumber: BookNumber,
+        ISBN: ISBN,
+      },
+    };
   } catch (err) {
     console.error("Database error:", err.message);
     return false;
@@ -200,6 +211,31 @@ const ReturnBook = async (userid, bookid) => {
   }
 };
 
+const DeleteRecord = async (userid, bookid) => {
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
+    const bookExists = await checkbook(bookid, connection);
+    if (!bookExists) {
+      throw new Error("Book is not available");
+    }
+    const sqlDeleteLoans = "DELETE FROM loans WHERE book_id = ?";
+    await connection.query(sqlDeleteLoans, [bookid]);
+
+    // Delete the book
+    const sqlDeleteBook = "DELETE FROM Books WHERE Bookid = ?";
+    await connection.query(sqlDeleteBook, [bookid]);
+    await connection.commit();
+    return { success: "Book Deleted Successfully" };
+  } catch (error) {
+    await connection.rollback(); // Roll back the transaction on error
+
+    return { error: "Unable to Delete Books: " + error.message };
+  } finally {
+    connection.release();
+  }
+};
+
 const loanedBook = async (userid) => {
   try {
     // Check if user exists
@@ -208,7 +244,7 @@ const loanedBook = async (userid) => {
     }
     const sql = "SELECT book_id FROM loans WHERE user_id = ?";
     const [result] = await pool.query(sql, [userid]);
-    return { result: result };
+    return { success: "Book loaned Sucessfully", result: result };
   } catch (error) {
     return { error: "Unable to fetch data: " + error.message };
   }
@@ -225,4 +261,5 @@ module.exports = {
   BorrowBook,
   ReturnBook,
   loanedBook,
+  DeleteRecord,
 };

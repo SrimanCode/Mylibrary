@@ -4,6 +4,7 @@ const axios = require("axios");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const cors = require("cors");
+require("dotenv").config({ path: "./src/.env" });
 
 const {
   registerUser,
@@ -16,12 +17,12 @@ const {
   BorrowBook,
   ReturnBook,
   loanedBook,
+  DeleteRecord,
 } = require("./src/database/database.js");
 
 const app = express();
 const PORT = 5000;
 app.use(cors());
-
 app.use(express.json()); // Middleware to parse JSON bodies
 
 app.get("/user", async (req, res) => {
@@ -74,7 +75,11 @@ app.post("/login", async (req, res) => {
   }
   result = await loginUser(username, password);
   if (result.success) {
-    res.status(200).send(result);
+    const id = result.id;
+    const token = jwt.sign({ id }, process.env.JWT_SECRET, {
+      expiresIn: 300,
+    });
+    res.status(200).send({ auth: true, token: token, result: result });
   } else {
     res.status(401).send({ error: "Login Failed" });
   }
@@ -107,8 +112,9 @@ app.post("/addBooks", async (req, res) => {
     const result = await addBooks(bookname, bookDesc, Author, BookNumber, ISBN);
 
     if (result) {
+      console.log(result);
       // If adding the book was successful, sending a 201 Created status.
-      res.status(201).send({ success: "Book successfully added" });
+      res.status(201).send(result);
     } else {
       // If there was a problem adding the book, sending a 500 Internal Server Error.
       res.status(500).send({ error: "Failed to add book" });
@@ -120,13 +126,52 @@ app.post("/addBooks", async (req, res) => {
   }
 });
 
+function validateJWT(req, res, next) {
+  const tokenObj = req.headers["x-access-token"];
+  if (!tokenObj) {
+    return res.status(401).send({ auth: false, message: "No token provided." });
+  }
+
+  const rawToken = tokenObj.split(" ")[0];
+  const token = rawToken.replace(/^"|"$/g, "").trim();
+
+  if (!token) {
+    return res.status(401).send({ auth: false, message: "No token found." });
+  }
+
+  try {
+    const verified = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = verified;
+    next();
+  } catch (error) {
+    if (error instanceof jwt.TokenExpiredError) {
+      return res
+        .status(400)
+        .send({ auth: false, message: "Token has expired" });
+    } else if (error instanceof jwt.JsonWebRoleError) {
+      return res.status(400).send({ auth: false, message: error.message });
+    } else {
+      return res
+        .status(400)
+        .send({ auth: false, message: "Token verification failed: " + error });
+    }
+  }
+}
 // get the info about the book
-app.get("/Bookinfo", async (req, res) => {
-  result = await BooksInfo();
-  if (result) {
-    res.status(200).send(result);
-  } else {
-    res.status(404).send({ error: "Failed to fetch books" });
+app.get("/Bookinfo", validateJWT, async (req, res) => {
+  try {
+    const result = await BooksInfo();
+    if (result) {
+      res.status(200).send({ auth: true, message: result });
+    } else {
+      res.status(404).send({ auth: true, message: "Failed to fetch books" });
+    }
+  } catch (err) {
+    res.status(400).send({
+      auth: false,
+      message: "Authentication failed",
+      error: err.message,
+    });
   }
 });
 
@@ -171,7 +216,7 @@ app.patch("/Return", async (req, res) => {
   }
 });
 
-app.post("/loanedBook", async (req, res) => {
+app.post("/loanedBook", validateJWT, async (req, res) => {
   const { userid } = req.body;
   try {
     const result = await loanedBook(userid);
@@ -181,6 +226,24 @@ app.post("/loanedBook", async (req, res) => {
       res.status(200).json({ success: result.result });
     }
   } catch (err) {
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// delete books
+app.post("/deletebooks", validateJWT, async (req, res) => {
+  const { bookid } = req.body;
+  try {
+    const result = await DeleteRecord(req.user.id, bookid);
+    if (result.success) {
+      return res
+        .status(200)
+        .send({ auth: true, message: "Record Sucessfully Deleted" });
+    } else {
+      return res.status(404).send({ error: result.error });
+    }
+  } catch (error) {
+    console.error("Error in /deletebooks route: ", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });

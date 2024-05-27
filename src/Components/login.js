@@ -11,6 +11,7 @@ function setToken(userToken) {
 function Login() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+
   let navigate = useNavigate();
   const auth = useAuth();
 
@@ -21,9 +22,12 @@ function Login() {
         username,
         password,
       });
-      auth.login(response.data); // Update auth context or state
-      sessionStorage.setItem("user", JSON.stringify(response.data));
-      if (response.data.role === "user") {
+      auth.login(response.data.result); // Update auth context or state
+      sessionStorage.setItem("user", JSON.stringify(response.data.result));
+      sessionStorage.setItem("token", JSON.stringify(response.data.token));
+      if (response.data.result.auth) {
+        navigate("/login", { replace: true });
+      } else if (response.data.result.role === "user") {
         navigate("/home", { replace: true });
       } else {
         navigate("/admin", { replace: true });

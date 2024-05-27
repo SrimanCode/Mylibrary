@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from "react";
 import UserList from "./Users";
+import { useNavigate } from "react-router-dom";
 
 function AdminHome() {
+  const navigate = useNavigate();
   const [books, setBooks] = useState([]);
   const [formData, setFormData] = useState({
     bookname: "",
@@ -12,11 +14,29 @@ function AdminHome() {
   });
 
   useEffect(() => {
-    fetch("http://localhost:5000/Bookinfo")
+    const userRole = sessionStorage.getItem("user");
+    const userObject = JSON.parse(userRole);
+    if (userObject.role !== "admin") {
+      navigate("/home", { replace: true });
+      return;
+    }
+    fetch("http://localhost:5000/Bookinfo", {
+      headers: {
+        "x-access-token": sessionStorage.getItem("token"),
+      },
+    })
       .then((response) => response.json())
-      .then((data) => setBooks(data))
-      .catch((error) => console.error("Error fetching books:", error));
-  }, []);
+      .then((data) => {
+        if (!data.auth) {
+          navigate("/login", { replace: true });
+          return;
+        }
+        setBooks(data.message);
+      })
+      .catch((error) => {
+        console.error("Failed to fetch books:", error);
+      });
+  }, [navigate, setBooks]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -26,6 +46,35 @@ function AdminHome() {
     }));
   };
 
+  function DeleteButton(bookid) {
+    fetch("http://localhost:5000/deletebooks", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-access-token": sessionStorage.getItem("token"),
+      },
+      body: JSON.stringify({
+        bookid: bookid,
+      }),
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        setBooks();
+        console.log(data.message);
+      })
+      .catch((error) => {
+        alert("Error deleting the book: " + error.message); // Alert any error that occurs
+      });
+  }
+  function Update(book) {
+    setFormData({
+      bookname: book.BookName,
+      bookDesc: book.BookDescription,
+      Author: book.Author,
+      BookNumber: book.BookNumber,
+      ISBN: book.ISBN,
+    });
+  }
   const handleSubmit = (e) => {
     e.preventDefault();
     fetch("http://localhost:5000/addBooks", {
@@ -43,7 +92,7 @@ function AdminHome() {
     })
       .then((response) => response.json())
       .then((data) => {
-        // setBooks((prevBooks) => [...prevBooks, data]);
+        setBooks((prevBooks) => [...prevBooks, data.result]);
         setFormData({
           bookname: "",
           bookDesc: "",
@@ -98,28 +147,45 @@ function AdminHome() {
         <div>
           <h2 className="mb-4 text-2xl font-semibold">Library Inventory</h2>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {books.map((book) => (
-              <div
-                key={book.ISBN}
-                className="p-4 space-y-2 bg-white rounded shadow"
-              >
-                <p>
-                  <strong>Name:</strong> {book.BookName}
-                </p>
-                <p>
-                  <strong>Description:</strong> {book.BookDescription}
-                </p>
-                <p>
-                  <strong>Author:</strong> {book.Author}
-                </p>
-                <p>
-                  <strong>Book Number:</strong> {book.BookNumber}
-                </p>
-                <p>
-                  <strong>ISBN:</strong> {book.ISBN}
-                </p>
-              </div>
-            ))}
+            {books &&
+              books.map((book) => (
+                <div
+                  key={book.ISBN}
+                  className="flex flex-col justify-between p-6 space-y-4 rounded-lg shadow-lg bg-gradient-to-br from-gray-50 to-blue-50"
+                >
+                  <div>
+                    <p className="text-xl font-bold text-gray-900">
+                      <strong>Name:</strong> {book.BookName}
+                    </p>
+                    <p className="text-base text-gray-700">
+                      <strong>Description:</strong> {book.BookDescription}
+                    </p>
+                    <p className="text-lg font-medium text-gray-800">
+                      <strong>Author:</strong> {book.Author}
+                    </p>
+                    <p className="text-lg text-gray-800">
+                      <strong>Book Number:</strong> {book.BookNumber}
+                    </p>
+                    <p className="text-lg text-gray-800">
+                      <strong>ISBN:</strong> {book.ISBN}
+                    </p>
+                  </div>
+                  <div className="flex items-center justify-center gap-4 mt-4">
+                    <button
+                      className="px-6 py-3 text-lg font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-300"
+                      onClick={() => DeleteButton(book.Bookid)}
+                    >
+                      Delete
+                    </button>
+                    <button
+                      className="px-6 py-3 text-lg font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-300"
+                      onClick={() => Update(book)}
+                    >
+                      Update
+                    </button>
+                  </div>
+                </div>
+              ))}
           </div>
         </div>
       </div>
