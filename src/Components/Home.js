@@ -9,6 +9,7 @@ function Home() {
 
   const [bookList, setBookList] = useState([]);
   const [loanedBooks, setLoanedBooks] = useState([]);
+  const [due_date, setdate] = useState([]);
   const [error, setError] = useState("");
   const user = sessionStorage.getItem("user");
   const userObj = JSON.parse(user);
@@ -38,6 +39,10 @@ function Home() {
         setError("Failed to fetch books: " + error);
       });
 
+    fetchloanData();
+  }, [navigate, userObj.id]);
+
+  function fetchloanData() {
     fetch("http://localhost:5000/loanedBook", {
       method: "POST",
       headers: {
@@ -48,18 +53,35 @@ function Home() {
     })
       .then((response) => response.json())
       .then((data) => {
+        const enrichedBooks = data.success.map((item) => ({
+          bookId: item.book_id,
+          dueDate: item.due_date,
+          loanDate: item.loan_date,
+        }));
+        setdate(enrichedBooks);
         setLoanedBooks(data.success.map((item) => item.book_id));
       })
       .catch((error) => {
         console.error("Failed to fetch loaned books:", error);
         setError("Failed to fetch loaned books: " + error);
       });
-  }, [navigate, userObj.id]);
-
+  }
   // Filtering books
   const filteredBooks = bookList.filter((book) =>
     loanedBooks.includes(book.Bookid)
   );
+
+  const extendedFilter = filteredBooks.map((book) => {
+    const loanDetails = due_date.find(
+      (loanedBook) => loanedBook.BookId === book.BookId
+    );
+
+    return {
+      ...book,
+      loan_date: loanDetails ? loanDetails.loanDate : null,
+      due_date: loanDetails ? loanDetails.dueDate : null,
+    };
+  });
 
   function handleLogout() {
     auth.logout();
@@ -126,6 +148,17 @@ function Home() {
   function isLoaned(bookId) {
     return loanedBooks.includes(bookId);
   }
+
+  function dateformat(isoDate) {
+    const date = new Date(isoDate);
+    const readableDate = date.toLocaleDateString("en-US", {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+    return readableDate;
+  }
   return (
     <div className="container px-4 py-4 mx-auto">
       <div className="flex flex-row justify-between">
@@ -135,7 +168,6 @@ function Home() {
         >
           Logout
         </button>
-        <h1 className="text-2xl font-bold text-blue-800">Total Fine: $0</h1>
         <h1 className="text-2xl font-bold text-blue-800">
           Book's Loaned: {loanedBooks.length} / 5
         </h1>
@@ -152,8 +184,8 @@ function Home() {
         Loaned Books
       </h1>
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
-        {filteredBooks.length > 0 ? (
-          filteredBooks.map((book) => (
+        {extendedFilter.length > 0 ? (
+          extendedFilter.map((book) => (
             <div
               key={book.Bookid}
               className="flex flex-col justify-between p-4 rounded-lg shadow-lg bg-slate-100"
@@ -174,6 +206,18 @@ function Home() {
                 </p>
                 <p className="pb-2 text-sm text-gray-700">
                   Author: <span className="font-semibold">{book.Author}</span>
+                </p>
+                <p className="pb-2 text-sm text-gray-700">
+                  loan Date:{" "}
+                  <span className="font-semibold">
+                    {dateformat(book.loan_date)}
+                  </span>
+                </p>
+                <p className="pb-2 text-sm text-gray-700">
+                  Due Date:{" "}
+                  <span className="font-semibold">
+                    {dateformat(book.due_date)}
+                  </span>
                 </p>
               </div>
               {/* Button at the bottom */}

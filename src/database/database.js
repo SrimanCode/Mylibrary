@@ -242,7 +242,7 @@ const loanedBook = async (userid) => {
     if (!(await checkUser(userid))) {
       return { error: "User does not exist" };
     }
-    const sql = "SELECT book_id FROM loans WHERE user_id = ?";
+    const sql = "SELECT * FROM loans WHERE user_id = ?";
     const [result] = await pool.query(sql, [userid]);
     return { success: "Book loaned Sucessfully", result: result };
   } catch (error) {

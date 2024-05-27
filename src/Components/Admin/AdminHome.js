@@ -103,10 +103,26 @@ function AdminHome() {
       })
       .catch((error) => console.error("Failed to add book:", error));
   };
-
+  function handleLogout() {
+    //auth.logout();
+    sessionStorage.removeItem("user");
+    navigate("/login", { replace: true });
+  }
   return (
     <>
       <div className="container p-4 mx-auto">
+        <div className="flex justify-between">
+          <button
+            onClick={handleLogout}
+            className="px-4 py-2 mb-4 font-bold text-white bg-blue-500 rounded hover:bg-blue-700 focus:outline-none focus:shadow-outline"
+          >
+            Logout
+          </button>
+          <h1 className="text-2xl font-bold text-blue-800">Total Users: 0</h1>
+          <h1 className="text-2xl font-bold text-blue-800">
+            Total Books: {books.length}
+          </h1>
+        </div>
         <form
           onSubmit={handleSubmit}
           className="px-8 pt-6 pb-8 mb-4 mb-6 bg-white rounded shadow-md"
